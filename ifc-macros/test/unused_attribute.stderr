@@ -1,0 +1,13 @@
+warning: Unused attribute
+ --> $DIR/unused_attribute.rs:5:15
+  |
+5 |         #[IFC(Unsafe)]
+  |               ^^^^^^
+  |
+  = help: Try removing it
+
+error: Warning_Error
+  --> $DIR/unused_attribute.rs:11:5
+   |
+11 |     compile_error!("Warning_Error");
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

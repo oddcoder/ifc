@@ -1,0 +1,9 @@
+error[E0277]: `Variable<High, {integer}>` doesn't implement `std::fmt::Display`
+ --> $DIR/format_highvars.rs:8:31
+  |
+8 |     let x_str = format!("{}", x);
+  |                               ^ `Variable<High, {integer}>` cannot be formatted with the default formatter
+  |
+  = help: the trait `std::fmt::Display` is not implemented for `Variable<High, {integer}>`
+  = note: in format strings you may be able to use `{:?}` (or {:#?} for pretty-print) instead
+  = note: this error originates in the macro `$crate::__export::format_args` (in Nightly builds, run with -Z macro-backtrace for more info)

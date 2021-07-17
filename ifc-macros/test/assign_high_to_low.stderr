@@ -1,0 +1,16 @@
+error: Cannot assign high expression to low variable
+ --> $DIR/assign_high_to_low.rs:8:9
+  |
+8 |         _y = x;
+  |         ^^^^^^
+  |
+help: Low Variable
+ --> $DIR/assign_high_to_low.rs:8:9
+  |
+8 |         _y = x;
+  |         ^^
+help: High Expression
+ --> $DIR/assign_high_to_low.rs:8:14
+  |
+8 |         _y = x;
+  |              ^

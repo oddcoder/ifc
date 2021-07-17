@@ -1,0 +1,16 @@
+error: Cannot assign high expression to low variable
+ --> $DIR/assign_high_to_untyped.rs:7:9
+  |
+7 |         x = y;
+  |         ^^^^^
+  |
+help: Low Variable
+ --> $DIR/assign_high_to_untyped.rs:7:9
+  |
+7 |         x = y;
+  |         ^
+help: High Expression
+ --> $DIR/assign_high_to_untyped.rs:7:13
+  |
+7 |         x = y;
+  |             ^
