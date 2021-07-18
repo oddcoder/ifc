@@ -9,7 +9,7 @@ pub struct Scope {
 }
 
 impl Scope {
-    pub(crate) fn new() -> Scope{
+    pub(crate) fn new() -> Scope {
         Default::default()
     }
     pub(crate) fn add_high(&mut self, ident: Ident) {
