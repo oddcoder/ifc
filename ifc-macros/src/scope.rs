@@ -1,6 +1,6 @@
 use crate::attributes::*;
 use std::collections::HashSet;
-use syn::{Ident, Type};
+use syn::Ident;
 
 #[derive(Default)]
 pub struct Scope {

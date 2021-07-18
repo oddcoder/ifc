@@ -19,8 +19,8 @@ impl IfcContext {
             "Subpatterns in identifiers are unimplemented"
         );
         match ifc_attrs.state.get() {
-            VariableState::Low => self.low_vars.insert(ident.ident.clone()),
-            VariableState::High => self.high_vars.insert(ident.ident.clone()),
+            VariableState::Low => self.add_low(ident.ident.clone()),
+            VariableState::High => self.add_high(ident.ident.clone()),
             VariableState::None => unreachable!(),
         };
     }
@@ -44,7 +44,6 @@ impl IfcContext {
         match &mut *t.pat {
             Pat::Ident(i) => {
                 self.process_pat_ident(i, ifc_attrs);
-                self.objects.insert(i.ident.clone(), t.ty.clone());
             }
             _ => unimplemented!(),
         };

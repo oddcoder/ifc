@@ -2,25 +2,18 @@ mod attributes;
 mod expr;
 mod local;
 
-use std::collections::{HashMap, HashSet};
-use syn::{Ident, Stmt, Type};
-use crate::scope::Scope;
 use crate::attributes::*;
+use crate::scope::Scope;
+use syn::{Ident, Stmt};
 
 #[derive(Default)]
 pub struct IfcContext {
-    high_vars: HashSet<Ident>,
-    low_vars: HashSet<Ident>,
-    objects: HashMap<Ident, Box<Type>>,
-    scopes: Vec<Scope>
+    scopes: Vec<Scope>,
 }
 
 impl IfcContext {
     pub fn new() -> Self {
         IfcContext {
-            high_vars: Default::default(),
-            low_vars: Default::default(),
-            objects: Default::default(),
             scopes: vec![Scope::new()],
         }
     }
@@ -43,11 +36,11 @@ impl IfcContext {
         VariableState::None
     }
 
-    fn add_scope(&mut self) {
+    fn _add_scope(&mut self) {
         self.scopes.push(Scope::new())
     }
 
-    fn remove_scope(&mut self) {
+    fn _remove_scope(&mut self) {
         self.scopes.pop();
     }
 

@@ -168,15 +168,7 @@ impl IfcContext {
                 // we don't support High/Low variables from differnet modules.
                 // if path is composed of more than one segments
                 match p.path.get_ident() {
-                    Some(ident) => {
-                        if self.high_vars.contains(ident) {
-                            VariableState::High
-                        } else if self.low_vars.contains(ident) {
-                            VariableState::Low
-                        } else {
-                            VariableState::None
-                        }
-                    }
+                    Some(ident) => self.get_type(ident),
                     // We don't support paths
                     None => VariableState::None,
                 }
