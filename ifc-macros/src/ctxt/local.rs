@@ -21,6 +21,7 @@ impl IfcContext {
         match ifc_attrs.state.get() {
             VariableState::Low => self.low_vars.insert(ident.ident.clone()),
             VariableState::High => self.high_vars.insert(ident.ident.clone()),
+            VariableState::None => unreachable!(),
         };
     }
 
@@ -31,6 +32,7 @@ impl IfcContext {
         let new_type_tokens = match ifc_attrs.state.get() {
             VariableState::Low => quote!(ifc::LowVar<#old_type>),
             VariableState::High => quote!(ifc::HighVar<#old_type>),
+            VariableState::None => unreachable!(),
         };
         // Embed the new type
         t.ty =
@@ -72,12 +74,14 @@ impl IfcContext {
             //  4- expr is low and ifc_attr is high => we do casting.
             self.process_expr_with_attrs(expr, &ifc_attrs);
             let new_expr_tokens = match (self.get_expr_type(expr), ifc_attrs.state.get()) {
-                (None, VariableState::Low) => quote!(ifc::LowVar::new(#expr)).into(),
-                (None, VariableState::High) => quote!(ifc::HighVar::new(#expr)).into(),
-                (Some(VariableState::Low), VariableState::High) => {
+                (VariableState::None, VariableState::Low) => quote!(ifc::LowVar::new(#expr)).into(),
+                (VariableState::None, VariableState::High) => {
+                    quote!(ifc::HighVar::new(#expr)).into()
+                }
+                (VariableState::Low, VariableState::High) => {
                     quote!(ifc::HighVar::from(#expr)).into()
                 }
-                (Some(VariableState::High), VariableState::Low) => {
+                (VariableState::High, VariableState::Low) => {
                     let expr_span = expr.span();
                     let local_span = local.span();
                     assign_high2low(local_span, local.pat.span(), expr_span).abort()

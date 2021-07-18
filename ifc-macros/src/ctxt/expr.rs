@@ -18,14 +18,14 @@ impl IfcContext {
             // we discard attributes here
             self.process_expr_with_attrs(argument, attrs);
             match self.get_expr_type(argument) {
-                None => (),
-                Some(VariableState::Low) => {
+                VariableState::None => (),
+                VariableState::Low => {
                     let tokens = quote!(#argument.inner());
                     *argument = parse::<Expr>(tokens.into()).expect(
                         "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
                     );
                 }
-                Some(VariableState::High) => {
+                VariableState::High => {
                     if *attrs.r#unsafe.get() {
                         let tokens = quote!(unsafe{#argument.inner()});
                         *argument = parse::<Expr>(tokens.into()).expect(
@@ -49,21 +49,21 @@ impl IfcContext {
         self.process_expr_with_attrs(left, attrs);
         self.process_expr_with_attrs(right, attrs);
         let tokens = match (self.get_expr_type(left), self.get_expr_type(right)) {
-            (None, None) => quote!(#right),
-            (None, Some(VariableState::Low)) => quote!(#right.inner()),
-            (None, Some(VariableState::High)) => {
+            (VariableState::None, VariableState::None) => quote!(#right),
+            (VariableState::None, VariableState::Low) => quote!(#right.inner()),
+            (VariableState::None, VariableState::High) => {
                 assign_high2low(fullspan, right.span(), left.span()).abort()
             }
-            (Some(VariableState::Low), None) => quote!(ifc::LowVar::new(#right)),
-            (Some(VariableState::Low), Some(VariableState::Low)) => quote!(#right),
-            (Some(VariableState::Low), Some(VariableState::High)) => {
+            (VariableState::Low, VariableState::None) => quote!(ifc::LowVar::new(#right)),
+            (VariableState::Low, VariableState::Low) => quote!(#right),
+            (VariableState::Low, VariableState::High) => {
                 assign_high2low(fullspan, right.span(), left.span()).abort()
             }
-            (Some(VariableState::High), None) => quote!(ifc::HighVar::new(#right)),
-            (Some(VariableState::High), Some(VariableState::Low)) => {
+            (VariableState::High, VariableState::None) => quote!(ifc::HighVar::new(#right)),
+            (VariableState::High, VariableState::Low) => {
                 quote!(ifc::HighVar::<_>::from(#right))
             }
-            (Some(VariableState::High), Some(VariableState::High)) => quote!(#right),
+            (VariableState::High, VariableState::High) => quote!(#right),
         };
         *right = parse::<Expr>(tokens.into())
             .expect("Fatal Error: Ifc-macros had Quote generated rust code that failed to parse");
@@ -75,45 +75,45 @@ impl IfcContext {
         let left_type = self.get_expr_type(left);
         let right_type = self.get_expr_type(right);
         match (left_type, right_type) {
-            (None, None) => (),
-            (None, Some(VariableState::Low)) => {
+            (VariableState::None, VariableState::None) => (),
+            (VariableState::None, VariableState::Low) => {
                 let tokens = quote!(ifc::LowVar::new(#left));
                 *left = parse::<Expr>(tokens.into()).expect(
                     "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
                 );
             }
-            (None, Some(VariableState::High)) => {
+            (VariableState::None, VariableState::High) => {
                 let tokens = quote!(ifc::HighVar::new(#left));
                 *left = parse::<Expr>(tokens.into()).expect(
                     "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
                 );
             }
-            (Some(VariableState::Low), None) => {
+            (VariableState::Low, VariableState::None) => {
                 let tokens = quote!(ifc::LowVar::new(#right));
                 *right = parse::<Expr>(tokens.into()).expect(
                     "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
                 );
             }
-            (Some(VariableState::Low), Some(VariableState::Low)) => (),
-            (Some(VariableState::Low), Some(VariableState::High)) => {
+            (VariableState::Low, VariableState::Low) => (),
+            (VariableState::Low, VariableState::High) => {
                 let tokens = quote!(ifc::HighVar::<_>::from(#left));
                 *left = parse::<Expr>(tokens.into()).expect(
                     "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
                 );
             }
-            (Some(VariableState::High), None) => {
+            (VariableState::High, VariableState::None) => {
                 let tokens = quote!(ifc::HighVar::new(#right));
                 *right = parse::<Expr>(tokens.into()).expect(
                     "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
                 );
             }
-            (Some(VariableState::High), Some(VariableState::Low)) => {
+            (VariableState::High, VariableState::Low) => {
                 let tokens = quote!(ifc::HighVar::<_>::from(#right));
                 *right = parse::<Expr>(tokens.into()).expect(
                     "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
                 );
             }
-            (Some(VariableState::High), Some(VariableState::High)) => (),
+            (VariableState::High, VariableState::High) => (),
         }
     }
 
@@ -145,7 +145,7 @@ impl IfcContext {
         self.process_expr_with_attrs(expr, &attrs)
     }
 
-    pub(crate) fn get_expr_type(&mut self, expr: &Expr) -> Option<VariableState> {
+    pub(crate) fn get_expr_type(&mut self, expr: &Expr) -> VariableState {
         match expr {
             // If an assignment is well typed
             // Then left and right have the same types
@@ -154,30 +154,31 @@ impl IfcContext {
             // Then left and right have the same types
             Expr::AssignOp(assign) => self.get_expr_type(&assign.left),
             Expr::Binary(b) => match (self.get_expr_type(&b.left), self.get_expr_type(&b.right)) {
-                (None, t) => t,
-                (t, None) => t,
-                (Some(VariableState::Low), Some(t)) => Some(t),
-                (Some(VariableState::High), _) => Some(VariableState::High),
+                (VariableState::None, t) => t,
+                (t, VariableState::None) => t,
+                (VariableState::Low, t) => t,
+                (VariableState::High, _) => VariableState::High,
             },
             // we don't support functions yet so we treat them as untyped.
-            Expr::Call(_) => None,
+            Expr::Call(_) => VariableState::None,
             // Literals are not typed
             // This way we can have them wrapped by High or low immediately
-            Expr::Lit(_) => None,
+            Expr::Lit(_) => VariableState::None,
             Expr::Path(p) => {
                 // we don't support High/Low variables from differnet modules.
                 // if path is composed of more than one segments
                 match p.path.get_ident() {
                     Some(ident) => {
                         if self.high_vars.contains(ident) {
-                            Some(VariableState::High)
+                            VariableState::High
                         } else if self.low_vars.contains(ident) {
-                            Some(VariableState::Low)
+                            VariableState::Low
                         } else {
-                            None
+                            VariableState::None
                         }
                     }
-                    None => None,
+                    // We don't support paths
+                    None => VariableState::None,
                 }
             }
             Expr::Reference(r) => self.get_expr_type(&r.expr),

@@ -6,6 +6,8 @@ use proc_macro2::Span;
 use property::Property;
 #[derive(Debug)]
 pub(crate) enum VariableState {
+    /// None is for variables declared outside the scope of IFC marcros.
+    None,
     Low,
     High,
 }
