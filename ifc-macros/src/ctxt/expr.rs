@@ -69,6 +69,54 @@ impl IfcContext {
             .expect("Fatal Error: Ifc-macros had Quote generated rust code that failed to parse");
     }
 
+    fn process_binary_sides(&mut self, left: &mut Expr, right: &mut Expr, attrs: &Attributes) {
+        self.process_expr_with_attrs(left, attrs);
+        self.process_expr_with_attrs(right, attrs);
+        let left_type = self.get_expr_type(left);
+        let right_type = self.get_expr_type(right);
+        match (left_type, right_type) {
+            (None, None) => (),
+            (None, Some(VariableState::Low)) => {
+                let tokens = quote!(ifc::LowVar::new(#left));
+                *left = parse::<Expr>(tokens.into()).expect(
+                    "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
+                );
+            }
+            (None, Some(VariableState::High)) => {
+                let tokens = quote!(ifc::HighVar::new(#left));
+                *left = parse::<Expr>(tokens.into()).expect(
+                    "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
+                );
+            }
+            (Some(VariableState::Low), None) => {
+                let tokens = quote!(ifc::LowVar::new(#right));
+                *right = parse::<Expr>(tokens.into()).expect(
+                    "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
+                );
+            }
+            (Some(VariableState::Low), Some(VariableState::Low)) => (),
+            (Some(VariableState::Low), Some(VariableState::High)) => {
+                let tokens = quote!(ifc::HighVar::<_>::from(#left));
+                *left = parse::<Expr>(tokens.into()).expect(
+                    "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
+                );
+            }
+            (Some(VariableState::High), None) => {
+                let tokens = quote!(ifc::HighVar::new(#right));
+                *right = parse::<Expr>(tokens.into()).expect(
+                    "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
+                );
+            }
+            (Some(VariableState::High), Some(VariableState::Low)) => {
+                let tokens = quote!(ifc::HighVar::<_>::from(#right));
+                *right = parse::<Expr>(tokens.into()).expect(
+                    "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
+                );
+            }
+            (Some(VariableState::High), Some(VariableState::High)) => (),
+        }
+    }
+
     pub(crate) fn process_expr_with_attrs(&mut self, expr: &mut Expr, attrs: &Attributes) {
         match expr {
             Expr::Assign(assign) => {
@@ -77,7 +125,7 @@ impl IfcContext {
             Expr::AssignOp(assign) => {
                 self.process_assign_sides(assign.span(), &mut assign.left, &mut assign.right, attrs)
             }
-
+            Expr::Binary(b) => self.process_binary_sides(&mut b.left, &mut b.right, attrs),
             Expr::Call(call) => self.process_call(call, attrs),
             // we do not do any transoformations to literals.
             Expr::Lit(_) => (),
@@ -105,6 +153,12 @@ impl IfcContext {
             // If an assignment is well typed
             // Then left and right have the same types
             Expr::AssignOp(assign) => self.get_expr_type(&assign.left),
+            Expr::Binary(b) => match (self.get_expr_type(&b.left), self.get_expr_type(&b.right)) {
+                (None, t) => t,
+                (t, None) => t,
+                (Some(VariableState::Low), Some(t)) => Some(t),
+                (Some(VariableState::High), _) => Some(VariableState::High),
+            },
             // we don't support functions yet so we treat them as untyped.
             Expr::Call(_) => None,
             // Literals are not typed
@@ -136,7 +190,6 @@ impl IfcContext {
                 Expr::Array(_) => None,
                 Expr::Async(_) unimplemented!(),
                 Expr::Await(ExprAwait) => unimplemented!(),
-                Expr::Binary(ExprBinary),
                 Expr::Block(ExprBlock),
                 Expr::Box(ExprBox),
                 Expr::Break(ExprBreak),
