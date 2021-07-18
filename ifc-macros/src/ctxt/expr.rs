@@ -74,6 +74,7 @@ impl IfcContext {
             Expr::Path(_) => (),
             Expr::Call(call) => self.process_call(call, attrs),
             Expr::Reference(r) => self.process_expr_with_attrs(&mut r.expr, attrs),
+            Expr::Unary(u) => self.process_expr_with_attrs(&mut u.expr, attrs),
             _ => {
                 println!("process_expr_with_attrs: {:#?}", expr);
                 unimplemented!()
@@ -116,47 +117,48 @@ impl IfcContext {
                 }
             }
             Expr::Reference(r) => self.get_expr_type(&r.expr),
+            Expr::Unary(u) => self.get_expr_type(&u.expr),
             _ => {
                 println!("get_expr_type {:#?}", expr);
                 unimplemented!();
-            } /*
-              //consider arrays of high or low variables
-                Expr::Array(_) => None,
-                Expr::Async(_) unimplemented!(),
-                Expr::Await(ExprAwait) => unimplemented!(),
-                Expr::Binary(ExprBinary),
-                Expr::Block(ExprBlock),
-                Expr::Box(ExprBox),
-                Expr::Break(ExprBreak),
-                Expr::Cast(ExprCast),
-                Expr::Closure(ExprClosure),
-                Expr::Continue(ExprContinue),
-                Expr::Field(ExprField),
-                Expr::ForLoop(ExprForLoop),
-                Expr::Group(ExprGroup),
-                Expr::If(ExprIf),
-                Expr::Index(ExprIndex),
-                Expr::Let(ExprLet),
-                Expr::Loop(ExprLoop),
-                Expr::Macro(ExprMacro),
-                Expr::Match(ExprMatch),
-                Expr::MethodCall(ExprMethodCall),
-                Expr::Paren(ExprParen),
-                Expr::Range(ExprRange),
-                Expr::Reference(ExprReference),
-                Expr::Repeat(ExprRepeat),
-                Expr::Return(ExprReturn),
-                Expr::Struct(ExprStruct),
-                Expr::Try(ExprTry),
-                Expr::TryBlock(ExprTryBlock),
-                Expr::Tuple(ExprTuple),
-                Expr::Type(ExprType),
-                Expr::Unary(ExprUnary),
-                Expr::Unsafe(ExprUnsafe),
-                Expr::Verbatim(TokenStream),
-                Expr::While(ExprWhile),
-                Expr::Yield(ExprYield),
-                */
+            }
+            /*
+            //consider arrays of high or low variables
+              Expr::Array(_) => None,
+              Expr::Async(_) unimplemented!(),
+              Expr::Await(ExprAwait) => unimplemented!(),
+              Expr::Binary(ExprBinary),
+              Expr::Block(ExprBlock),
+              Expr::Box(ExprBox),
+              Expr::Break(ExprBreak),
+              Expr::Cast(ExprCast),
+              Expr::Closure(ExprClosure),
+              Expr::Continue(ExprContinue),
+              Expr::Field(ExprField),
+              Expr::ForLoop(ExprForLoop),
+              Expr::Group(ExprGroup),
+              Expr::If(ExprIf),
+              Expr::Index(ExprIndex),
+              Expr::Let(ExprLet),
+              Expr::Loop(ExprLoop),
+              Expr::Macro(ExprMacro),
+              Expr::Match(ExprMatch),
+              Expr::MethodCall(ExprMethodCall),
+              Expr::Paren(ExprParen),
+              Expr::Range(ExprRange),
+              Expr::Reference(ExprReference),
+              Expr::Repeat(ExprRepeat),
+              Expr::Return(ExprReturn),
+              Expr::Struct(ExprStruct),
+              Expr::Try(ExprTry),
+              Expr::TryBlock(ExprTryBlock),
+              Expr::Tuple(ExprTuple),
+              Expr::Type(ExprType),
+              Expr::Unsafe(ExprUnsafe),
+              Expr::Verbatim(TokenStream),
+              Expr::While(ExprWhile),
+              Expr::Yield(ExprYield),
+              */
         }
     }
 }
