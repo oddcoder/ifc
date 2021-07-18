@@ -1,6 +1,15 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
+    t.pass("test/binary_high_high.rs");
+    t.pass("test/binary_high_low.rs");
+    t.pass("test/binary_high_none.rs");
+    t.pass("test/binary_low_high.rs");
+    t.pass("test/binary_low_low.rs");
+    t.pass("test/binary_low_none.rs");
+    t.pass("test/binary_none_high.rs");
+    t.pass("test/binary_none_low.rs");
+    t.pass("test/binary_none_none.rs");
     t.compile_fail("test/variables.rs");
     t.pass("test/format_lowvars.rs");
     t.compile_fail("test/format_highvars.rs");
