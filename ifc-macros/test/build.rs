@@ -1,7 +1,7 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
-    t.compile_fail("test/variables.rs"); // fake failing to capture warnings
+    t.compile_fail("test/variables.rs");
     t.pass("test/format_lowvars.rs");
     t.compile_fail("test/format_highvars.rs");
     t.pass("test/define_high_as_low.rs");
@@ -22,5 +22,13 @@ fn tests() {
     t.compile_fail("test/pass_high_ref_to_fn.rs");
     t.compile_fail("test/unused_attribute.rs");
     t.pass("test/unary.rs");
-    
+    t.pass("test/assignop_untyped_to_untyped.rs");
+    t.pass("test/assignop_low_to_untyped.rs");
+    t.compile_fail("test/assignop_high_to_untyped.rs");
+    t.pass("test/assignop_untyped_to_low.rs");
+    t.pass("test/assignop_low_to_low.rs");
+    t.compile_fail("test/assignop_high_to_low.rs");
+    t.pass("test/assignop_untyped_to_high.rs");
+    t.pass("test/assignop_low_to_high.rs");
+    t.pass("test/assignop_high_to_high.rs");
 }
