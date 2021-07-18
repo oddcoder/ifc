@@ -21,4 +21,6 @@ fn tests() {
     t.compile_fail("test/pass_high_mut_to_fn.rs");
     t.compile_fail("test/pass_high_ref_to_fn.rs");
     t.compile_fail("test/unused_attribute.rs");
+    t.pass("test/unary.rs");
+    
 }
