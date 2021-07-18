@@ -6,6 +6,7 @@
 mod attributes;
 mod ctxt;
 mod error;
+mod scope;
 mod semi_block;
 
 use ctxt::IfcContext;
