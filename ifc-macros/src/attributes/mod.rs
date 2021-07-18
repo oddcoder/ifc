@@ -4,7 +4,7 @@ use crate::error::{conflicting_attributes, redundant_high, unknown_attribute};
 use proc_macro2::Ident;
 use proc_macro2::Span;
 use property::Property;
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub(crate) enum VariableState {
     /// None is for variables declared outside the scope of IFC marcros.
     None,
