@@ -115,9 +115,9 @@ impl IfcContext {
                 // if path is composed of more than one segments
                 match p.path.get_ident() {
                     Some(ident) => {
-                        if self.high_vars.contains(&ident) {
+                        if self.high_vars.contains(ident) {
                             Some(VariableState::High)
-                        } else if self.low_vars.contains(&ident) {
+                        } else if self.low_vars.contains(ident) {
                             Some(VariableState::Low)
                         } else {
                             None

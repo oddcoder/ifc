@@ -12,7 +12,7 @@ fn collect_ifc_tokens(attr: Attribute) -> Vec<Ident> {
     for tree in attr.tokens {
         let stream = match tree {
             TokenTree::Group(g) => g.stream(),
-            foo => panic!("Expected #[IFC(Stuff)].. found `{}`", foo),
+            t => panic!("Expected #[IFC(Stuff)].. found `{}`", t),
         };
         for tree in stream {
             match tree {
@@ -22,7 +22,7 @@ fn collect_ifc_tokens(attr: Attribute) -> Vec<Ident> {
                         panic!("Expected `,`, found {:#?}", p)
                     }
                 }
-                foo => panic!("Expected Ident, found {:#?}", foo),
+                t => panic!("Expected Ident, found {:#?}", t),
             }
         }
     }
@@ -31,7 +31,7 @@ fn collect_ifc_tokens(attr: Attribute) -> Vec<Ident> {
 
 macro_rules! extract_attributes {
     ($self: ident, $x: ident) => {{
-        let attrs = $self.split_attrs(mem::replace(&mut $x.attrs, vec![]));
+        let attrs = $self.split_attrs(mem::take(&mut $x.attrs));
         $x.attrs = attrs.1;
         let ifc_attrs = attrs.0;
         Attributes::new(ifc_attrs)
