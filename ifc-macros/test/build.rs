@@ -1,6 +1,9 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
+    t.pass("test/simple_block.rs");
+    t.compile_fail("test/block_access_upper_scope.rs");
+    t.pass("test/block_full_scope_test.rs");
     t.pass("test/binary_high_high.rs");
     t.pass("test/binary_high_low.rs");
     t.pass("test/binary_high_none.rs");

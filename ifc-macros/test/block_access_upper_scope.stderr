@@ -1,0 +1,16 @@
+error: Cannot assign high expression to low variable
+  --> $DIR/block_access_upper_scope.rs:11:13
+   |
+11 |             let _y = x;
+   |             ^^^^^^^^^^^
+   |
+help: Low Variable
+  --> $DIR/block_access_upper_scope.rs:11:17
+   |
+11 |             let _y = x;
+   |                 ^^
+help: High Expression
+  --> $DIR/block_access_upper_scope.rs:11:22
+   |
+11 |             let _y = x;
+   |                      ^
