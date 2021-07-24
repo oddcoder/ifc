@@ -54,14 +54,12 @@ impl IfcContext {
         // first look at the attributes and parse the IFC related ones
 
         let ifc_attrs = self.local_attrs(local);
-
         // next we set the type type accordingly
         match &mut local.pat {
             Pat::Type(t) => self.process_pat_types(t, &ifc_attrs),
             Pat::Ident(ident) => self.process_pat_ident(ident, &ifc_attrs),
             _ => unimplemented!(),
         }
-
         // finally we set the initializer correctly.
         if let Some((_, expr)) = &mut local.init {
             // we have one of the following scenarios:
@@ -83,7 +81,12 @@ impl IfcContext {
                 (VariableState::High, VariableState::Low) => {
                     let expr_span = expr.span();
                     let local_span = local.span();
-                    assign_high2low(local_span, local.pat.span(), expr_span).abort()
+                    let ident_span = match &local.pat {
+                        Pat::Ident(i) => i.span(),
+                        Pat::Type(t) => t.pat.span(),
+                        _ => unimplemented!(),
+                    };
+                    assign_high2low(local_span, expr_span, ident_span).abort()
                 }
                 _ => quote!(#expr).into(),
             };

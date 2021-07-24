@@ -5,17 +5,12 @@ error: Cannot assign high expression to low variable
   |         ^^^^^^^^^^^^^^^^^^^
   |
 help: Low Variable
+ --> $DIR/define_low_as_high.rs:7:13
+  |
+7 |         let _y: usize  = x;
+  |             ^^
+help: High Expression
  --> $DIR/define_low_as_high.rs:7:26
   |
 7 |         let _y: usize  = x;
   |                          ^
-help: High Expression
- --> $DIR/define_low_as_high.rs:4:5
-  |
-4 | /     ifc_block!{
-5 | |         let x : usize = 5;
-6 | |         #[IFC(Low)]
-7 | |         let _y: usize  = x;
-8 | |     };
-  | |______^
-  = note: this error originates in the macro `ifc_block` (in Nightly builds, run with -Z macro-backtrace for more info)
