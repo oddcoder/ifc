@@ -36,11 +36,11 @@ impl IfcContext {
         VariableState::None
     }
 
-    fn _add_scope(&mut self) {
+    fn add_scope(&mut self) {
         self.scopes.push(Scope::new())
     }
 
-    fn _remove_scope(&mut self) {
+    fn remove_scope(&mut self) {
         self.scopes.pop();
     }
 

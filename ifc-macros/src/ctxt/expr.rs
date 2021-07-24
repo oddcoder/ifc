@@ -4,7 +4,7 @@ use crate::error::{assign_high2low, pass_high_to_fn};
 use proc_macro2::Span;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{parse, Expr, ExprCall};
+use syn::{parse, Block, Expr, ExprCall, Stmt};
 
 impl IfcContext {
     /// We don't support IFC in functions yet.
@@ -116,7 +116,13 @@ impl IfcContext {
             (VariableState::High, VariableState::High) => (),
         }
     }
-
+    fn process_block(&mut self, block: &mut Block, _: &Attributes) {
+        self.add_scope();
+        for stmt in block.stmts.iter_mut() {
+            self.process_stmt(stmt);
+        }
+        self.remove_scope();
+    }
     pub(crate) fn process_expr_with_attrs(&mut self, expr: &mut Expr, attrs: &Attributes) {
         match expr {
             Expr::Assign(assign) => {
@@ -126,6 +132,7 @@ impl IfcContext {
                 self.process_assign_sides(assign.span(), &mut assign.left, &mut assign.right, attrs)
             }
             Expr::Binary(b) => self.process_binary_sides(&mut b.left, &mut b.right, attrs),
+            Expr::Block(b) => self.process_block(&mut b.block, attrs),
             Expr::Call(call) => self.process_call(call, attrs),
             // we do not do any transoformations to literals.
             Expr::Lit(_) => (),
@@ -145,6 +152,18 @@ impl IfcContext {
         self.process_expr_with_attrs(expr, &attrs)
     }
 
+    fn get_block_type(&mut self, block: &Block) -> VariableState {
+        // lets imagine the following let x = { //code here}
+        // the value of is identified by the last statement on {}
+        // but if the last statement is not expression (with out simicolong)
+        // then the block returns `()` which is VariableState::None
+        // It is important to note that VariableState::None means that statement
+        // is neigher high nor low
+        match block.stmts.last() {
+            Some(Stmt::Expr(e)) => self.get_expr_type(e),
+            _ => VariableState::None,
+        }
+    }
     pub(crate) fn get_expr_type(&mut self, expr: &Expr) -> VariableState {
         match expr {
             // If an assignment is well typed
@@ -159,6 +178,7 @@ impl IfcContext {
                 (VariableState::Low, t) => t,
                 (VariableState::High, _) => VariableState::High,
             },
+            Expr::Block(b) => self.get_block_type(&b.block),
             // we don't support functions yet so we treat them as untyped.
             Expr::Call(_) => VariableState::None,
             // Literals are not typed
@@ -183,7 +203,7 @@ impl IfcContext {
                 Expr::Array(_) => None,
                 Expr::Async(_) unimplemented!(),
                 Expr::Await(ExprAwait) => unimplemented!(),
-                Expr::Block(ExprBlock),
+
                 Expr::Box(ExprBox),
                 Expr::Break(ExprBreak),
                 Expr::Cast(ExprCast),
