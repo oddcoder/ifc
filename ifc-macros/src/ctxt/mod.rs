@@ -4,6 +4,7 @@ mod local;
 
 use crate::attributes::*;
 use crate::scope::Scope;
+use proc_macro2::Span;
 use syn::{Ident, Stmt};
 
 #[derive(Default)]
@@ -51,5 +52,18 @@ impl IfcContext {
             Stmt::Expr(e) => self.process_expr(e),
             Stmt::Semi(e, _) => self.process_expr(e),
         }
+    }
+    pub fn set_high_condition(&mut self, span: Span) {
+        self.scopes.last_mut().unwrap().set_high_condition(span)
+    }
+
+    pub fn get_high_condition(&self) -> Option<Span> {
+        for scope in self.scopes.iter().rev() {
+            let high_expr = scope.get_high_condition();
+            if high_expr.is_some() {
+                return high_expr;
+            }
+        }
+        None
     }
 }

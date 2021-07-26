@@ -1,6 +1,6 @@
 use super::IfcContext;
 use crate::attributes::{Attributes, VariableState};
-use crate::error::{assign_high2low, pass_high_to_fn};
+use crate::error::{assign_high2low, high_guard, high_guard_fn, pass_high_to_fn};
 use proc_macro2::Span;
 use quote::quote;
 use syn::spanned::Spanned;
@@ -17,23 +17,27 @@ impl IfcContext {
         for argument in call.args.iter_mut() {
             // we discard attributes here
             self.process_expr_with_attrs(argument, attrs);
-            match self.get_expr_type(argument) {
-                VariableState::None => (),
-                VariableState::Low => {
+            match (
+                self.get_high_condition(),
+                *attrs.r#unsafe.get(),
+                self.get_expr_type(argument),
+            ) {
+                (Some(guard), false, _) => high_guard_fn(callspan, guard, argument.span()).abort(),
+                (_, _, VariableState::None) => (),
+                (_, _, VariableState::Low) => {
                     let tokens = quote!(#argument.inner());
                     *argument = parse::<Expr>(tokens.into()).expect(
                         "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
                     );
                 }
-                VariableState::High => {
-                    if *attrs.r#unsafe.get() {
-                        let tokens = quote!(unsafe{#argument.inner()});
-                        *argument = parse::<Expr>(tokens.into()).expect(
-                            "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",    
-                        );
-                    } else {
-                        pass_high_to_fn(callspan, argument.span()).abort();
-                    }
+                (_, false, VariableState::High) => {
+                    pass_high_to_fn(callspan, argument.span()).abort()
+                }
+                (_, true, VariableState::High) => {
+                    let tokens = quote!(unsafe{#argument.inner()});
+                    *argument = parse::<Expr>(tokens.into()).expect(
+                        "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",    
+                    );
                 }
             }
         }
@@ -48,22 +52,32 @@ impl IfcContext {
     ) {
         self.process_expr_with_attrs(left, attrs);
         self.process_expr_with_attrs(right, attrs);
-        let tokens = match (self.get_expr_type(left), self.get_expr_type(right)) {
-            (VariableState::None, VariableState::None) => quote!(#right),
-            (VariableState::None, VariableState::Low) => quote!(#right.inner()),
-            (VariableState::None, VariableState::High) => {
+        let tokens = match (
+            self.get_high_condition(),
+            self.get_expr_type(left),
+            self.get_expr_type(right),
+        ) {
+            (Some(guard), VariableState::None, _) => {
+                high_guard(fullspan, guard, left.span()).abort()
+            }
+            (Some(guard), VariableState::Low, _) => {
+                high_guard(fullspan, guard, left.span()).abort()
+            }
+            (None, VariableState::None, VariableState::None) => quote!(#right),
+            (None, VariableState::None, VariableState::Low) => quote!(#right.inner()),
+            (None, VariableState::None, VariableState::High) => {
                 assign_high2low(fullspan, right.span(), left.span()).abort()
             }
-            (VariableState::Low, VariableState::None) => quote!(ifc::LowVar::new(#right)),
-            (VariableState::Low, VariableState::Low) => quote!(#right),
-            (VariableState::Low, VariableState::High) => {
+            (None, VariableState::Low, VariableState::None) => quote!(ifc::LowVar::new(#right)),
+            (None, VariableState::Low, VariableState::Low) => quote!(#right),
+            (None, VariableState::Low, VariableState::High) => {
                 assign_high2low(fullspan, right.span(), left.span()).abort()
             }
-            (VariableState::High, VariableState::None) => quote!(ifc::HighVar::new(#right)),
-            (VariableState::High, VariableState::Low) => {
+            (_, VariableState::High, VariableState::None) => quote!(ifc::HighVar::new(#right)),
+            (_, VariableState::High, VariableState::Low) => {
                 quote!(ifc::HighVar::<_>::from(#right))
             }
-            (VariableState::High, VariableState::High) => quote!(#right),
+            (_, VariableState::High, VariableState::High) => quote!(#right),
         };
         *right = parse::<Expr>(tokens.into())
             .expect("Fatal Error: Ifc-macros had Quote generated rust code that failed to parse");
@@ -116,8 +130,11 @@ impl IfcContext {
             (VariableState::High, VariableState::High) => (),
         }
     }
-    fn process_block(&mut self, block: &mut Block, _: &Attributes) {
+    fn process_block(&mut self, block: &mut Block, guard: Option<Span>, _: &Attributes) {
         self.add_scope();
+        if let Some(guard) = guard {
+            self.set_high_condition(guard);
+        }
         for stmt in block.stmts.iter_mut() {
             self.process_stmt(stmt);
         }
@@ -132,7 +149,7 @@ impl IfcContext {
                 self.process_assign_sides(assign.span(), &mut assign.left, &mut assign.right, attrs)
             }
             Expr::Binary(b) => self.process_binary_sides(&mut b.left, &mut b.right, attrs),
-            Expr::Block(b) => self.process_block(&mut b.block, attrs),
+            Expr::Block(b) => self.process_block(&mut b.block, None, attrs),
             Expr::Call(call) => self.process_call(call, attrs),
             // we do not do any transoformations to literals.
             Expr::Lit(_) => (),
@@ -212,7 +229,7 @@ impl IfcContext {
                 Expr::Field(ExprField),
                 Expr::ForLoop(ExprForLoop),
                 Expr::Group(ExprGroup),
-                Expr::If(ExprIf),
+
                 Expr::Index(ExprIndex),
                 Expr::Let(ExprLet),
                 Expr::Loop(ExprLoop),

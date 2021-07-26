@@ -48,3 +48,23 @@ pub fn pass_high_to_fn(full: Span, high: Span) -> Diagnostic {
     )
     .span_help(high, "High Expression".to_string())
 }
+
+pub fn high_guard(full: Span, high: Span, low: Span) -> Diagnostic {
+    Diagnostic::spanned(
+        full,
+        Level::Error,
+        "Cannot declare new low variable or assign to low variable in high context".to_string(),
+    )
+    .span_help(high, "High context was created here".to_string())
+    .span_help(low, "Low variable is used here.".to_string())
+}
+
+pub fn high_guard_fn(full: Span, high: Span, arg: Span) -> Diagnostic {
+    Diagnostic::spanned(
+        full,
+        Level::Error,
+        "Cannot pass arguments to function that is called in high context".to_string(),
+    )
+    .span_help(high, "High context was created here".to_string())
+    .span_help(arg, "Argument is passed here.".to_string())
+}

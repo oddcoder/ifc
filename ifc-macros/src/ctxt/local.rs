@@ -1,7 +1,8 @@
 use super::IfcContext;
 
 use crate::attributes::{Attributes, VariableState};
-use crate::error::assign_high2low;
+use crate::error::{assign_high2low, high_guard};
+use proc_macro2::Span;
 use quote::quote;
 use syn::spanned::Spanned;
 use syn::{parse, Expr, Local, Pat, PatIdent, PatType, Type};
@@ -49,6 +50,13 @@ impl IfcContext {
         };
     }
 
+    fn get_lhs_span(&mut self, local: &Local) -> Span {
+        match &local.pat {
+            Pat::Ident(i) => i.span(),
+            Pat::Type(t) => t.pat.span(),
+            _ => unimplemented!(),
+        }
+    }
     /// A local let binding: let x: u64 = s.parse()?.
     pub fn process_local(&mut self, local: &mut Local) {
         // first look at the attributes and parse the IFC related ones
@@ -59,6 +67,15 @@ impl IfcContext {
             Pat::Type(t) => self.process_pat_types(t, &ifc_attrs),
             Pat::Ident(ident) => self.process_pat_ident(ident, &ifc_attrs),
             _ => unimplemented!(),
+        }
+
+        // next we check that this is not low-var let statement with high expr condition guard
+        if let Some(guard_span) = self.get_high_condition() {
+            if VariableState::High != *ifc_attrs.state.get() {
+                let local_span = local.span();
+                let ident_span = self.get_lhs_span(local);
+                high_guard(local_span, guard_span, ident_span).abort();
+            }
         }
         // finally we set the initializer correctly.
         if let Some((_, expr)) = &mut local.init {
@@ -81,11 +98,7 @@ impl IfcContext {
                 (VariableState::High, VariableState::Low) => {
                     let expr_span = expr.span();
                     let local_span = local.span();
-                    let ident_span = match &local.pat {
-                        Pat::Ident(i) => i.span(),
-                        Pat::Type(t) => t.pat.span(),
-                        _ => unimplemented!(),
-                    };
+                    let ident_span = self.get_lhs_span(local);
                     assign_high2low(local_span, expr_span, ident_span).abort()
                 }
                 _ => quote!(#expr).into(),
