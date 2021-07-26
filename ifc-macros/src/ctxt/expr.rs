@@ -153,6 +153,7 @@ impl IfcContext {
             Expr::Call(call) => self.process_call(call, attrs),
             // we do not do any transoformations to literals.
             Expr::Lit(_) => (),
+            Expr::Paren(paren) => self.process_expr_with_attrs(&mut paren.expr, attrs),
             // we don't do any transformations on identifiers.
             Expr::Path(_) => (),
             Expr::Reference(r) => self.process_expr_with_attrs(&mut r.expr, attrs),
@@ -201,6 +202,9 @@ impl IfcContext {
             // Literals are not typed
             // This way we can have them wrapped by High or low immediately
             Expr::Lit(_) => VariableState::None,
+            // parens are for (a + b) and if conditions and loops
+            // Not to be confused with tuples
+            Expr::Paren(paren) => self.get_expr_type(&paren.expr),
             Expr::Path(p) => {
                 // we don't support High/Low variables from differnet modules.
                 // if path is composed of more than one segments
@@ -236,7 +240,6 @@ impl IfcContext {
                 Expr::Macro(ExprMacro),
                 Expr::Match(ExprMatch),
                 Expr::MethodCall(ExprMethodCall),
-                Expr::Paren(ExprParen),
                 Expr::Range(ExprRange),
                 Expr::Reference(ExprReference),
                 Expr::Repeat(ExprRepeat),
