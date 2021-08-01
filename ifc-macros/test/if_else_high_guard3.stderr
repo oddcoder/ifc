@@ -1,0 +1,16 @@
+error: Cannot declare new low variable or assign to low variable in high context
+ --> $DIR/if_else_high_guard3.rs:8:13
+  |
+8 |             let x = 5;
+  |             ^^^^^^^^^^
+  |
+help: High context was created here
+ --> $DIR/if_else_high_guard3.rs:6:12
+  |
+6 |         if a == 5 {
+  |            ^^^^^^
+help: Low variable is used here.
+ --> $DIR/if_else_high_guard3.rs:8:17
+  |
+8 |             let x = 5;
+  |                 ^

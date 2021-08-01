@@ -1,6 +1,12 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
+    t.compile_fail("test/if_else_high_guard4.rs");
+    t.compile_fail("test/if_else_high_guard3.rs");
+    t.compile_fail("test/if_else_high_guard2.rs");
+    t.pass("test/if_else_high_guard.rs");
+    t.pass("test/if_else_none_guard.rs");
+    t.pass("test/if_else_low_guard.rs");
     t.pass("test/nested_block_type_inference.rs");
     t.compile_fail("test/nested_block_type_inference2.rs");
     t.pass("test/parens.rs");
