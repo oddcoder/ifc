@@ -15,12 +15,13 @@ use proc_macro_error::*;
 use quote::quote;
 use semi_block::SemiBlock;
 use syn::parse_macro_input;
+use syn::spanned::Spanned;
 
 #[proc_macro_error]
 #[proc_macro]
 pub fn ifc_block(tokens: TokenStream) -> TokenStream {
     let mut syn_tree = parse_macro_input!(tokens as SemiBlock);
-    let mut ctxt = IfcContext::new();
+    let mut ctxt = IfcContext::new(syn_tree.span());
     for stmt in syn_tree.stmts.iter_mut() {
         ctxt.process_stmt(stmt)
     }

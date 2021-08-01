@@ -131,7 +131,7 @@ impl IfcContext {
         }
     }
     fn process_block(&mut self, block: &mut Block, guard: Option<Span>, _: &Attributes) {
-        self.add_scope();
+        self.add_scope(block.span());
         if let Some(guard) = guard {
             self.set_high_condition(guard);
         }
@@ -177,10 +177,13 @@ impl IfcContext {
         // then the block returns `()` which is VariableState::None
         // It is important to note that VariableState::None means that statement
         // is neigher high nor low
-        match block.stmts.last() {
+        self.tmp_add_scope(block.span());
+        let ty = match block.stmts.last() {
             Some(Stmt::Expr(e)) => self.get_expr_type(e),
             _ => VariableState::None,
-        }
+        };
+        self.tmp_remove_scope();
+        return ty;
     }
     pub(crate) fn get_expr_type(&mut self, expr: &Expr) -> VariableState {
         match expr {
