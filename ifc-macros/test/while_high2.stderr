@@ -1,0 +1,16 @@
+error: Cannot declare new low variable or assign to low variable in high context
+ --> $DIR/while_high2.rs:9:13
+  |
+9 |             _x += 1;
+  |             ^^^^^^^
+  |
+help: High context was created here
+ --> $DIR/while_high2.rs:7:15
+  |
+7 |         while a > 5 {
+  |               ^^^^^
+help: Low variable is used here.
+ --> $DIR/while_high2.rs:9:13
+  |
+9 |             _x += 1;
+  |             ^^

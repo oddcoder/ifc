@@ -1,6 +1,11 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
+    t.pass("test/while_high3.rs");
+    t.compile_fail("test/while_high2.rs");
+    t.compile_fail("test/while_high1.rs");
+    t.pass("test/while_none.rs");
+    t.pass("test/while_low.rs");
     t.compile_fail("test/if_else_high_guard4.rs");
     t.compile_fail("test/if_else_high_guard3.rs");
     t.compile_fail("test/if_else_high_guard2.rs");
