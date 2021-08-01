@@ -4,7 +4,7 @@ use crate::error::{assign_high2low, high_guard, high_guard_fn, pass_high_to_fn};
 use proc_macro2::Span;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{parse, Block, Expr, ExprCall, ExprIf, Stmt};
+use syn::{parse, Block, Expr, ExprCall, ExprIf, ExprWhile, Stmt};
 
 impl IfcContext {
     /// We don't support IFC in functions yet.
@@ -161,6 +161,15 @@ impl IfcContext {
             self.remove_scope();
         }
     }
+    fn process_while(&mut self, wexpr: &mut ExprWhile, attrs: &Attributes) {
+        let span = wexpr.cond.span();
+        self.process_expr_with_attrs(&mut wexpr.cond, attrs);
+        let guardspan = match self.get_expr_type(&wexpr.cond) {
+            VariableState::High => Some(span),
+            _ => None,
+        };
+        self.process_block(&mut wexpr.body, guardspan, attrs);
+    }
     pub(crate) fn process_expr_with_attrs(&mut self, expr: &mut Expr, attrs: &Attributes) {
         match expr {
             Expr::Assign(assign) => {
@@ -180,6 +189,7 @@ impl IfcContext {
             Expr::Path(_) => (),
             Expr::Reference(r) => self.process_expr_with_attrs(&mut r.expr, attrs),
             Expr::Unary(u) => self.process_expr_with_attrs(&mut u.expr, attrs),
+            Expr::While(wexpr) => self.process_while(wexpr, attrs),
             _ => {
                 println!("process_expr_with_attrs: {:#?}", expr);
                 unimplemented!()
@@ -249,6 +259,10 @@ impl IfcContext {
             }
             Expr::Reference(r) => self.get_expr_type(&r.expr),
             Expr::Unary(u) => self.get_expr_type(&u.expr),
+            Expr::While(wexpr) => match self.get_expr_type(&wexpr.cond) {
+                VariableState::High => VariableState::High,
+                _ => self.get_block_type(&wexpr.body),
+            },
             _ => {
                 println!("get_expr_type {:#?}", expr);
                 unimplemented!();
@@ -257,7 +271,6 @@ impl IfcContext {
                 Expr::Array(_) => None,
                 Expr::Async(_) unimplemented!(),
                 Expr::Await(ExprAwait) => unimplemented!(),
-
                 Expr::Box(ExprBox),
                 Expr::Break(ExprBreak),
                 Expr::Cast(ExprCast),
@@ -283,7 +296,6 @@ impl IfcContext {
                 Expr::Type(ExprType),
                 Expr::Unsafe(ExprUnsafe),
                 Expr::Verbatim(TokenStream),
-                Expr::While(ExprWhile),
                 Expr::Yield(ExprYield),
                 */
         }
