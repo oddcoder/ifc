@@ -1,6 +1,8 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
+    t.pass("test/nested_block_type_inference.rs");
+    t.compile_fail("test/nested_block_type_inference2.rs");
     t.pass("test/parens.rs");
     t.pass("test/simple_block.rs");
     t.compile_fail("test/block_access_upper_scope.rs");
