@@ -4,7 +4,7 @@ use crate::error::{assign_high2low, high_guard, high_guard_fn, pass_high_to_fn};
 use proc_macro2::Span;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{parse, Block, Expr, ExprCall, Stmt};
+use syn::{parse, Block, Expr, ExprCall, ExprIf, Stmt};
 
 impl IfcContext {
     /// We don't support IFC in functions yet.
@@ -140,6 +140,27 @@ impl IfcContext {
         }
         self.remove_scope();
     }
+    fn process_if(&mut self, ifexpr: &mut ExprIf, attrs: &Attributes) {
+        let span = ifexpr.cond.span();
+        self.process_expr_with_attrs(&mut ifexpr.cond, attrs);
+        let expr_type = self.get_expr_type(&ifexpr.cond);
+        let guardspan = match expr_type {
+            VariableState::High => Some(span),
+            _ => None,
+        };
+        self.process_block(&mut ifexpr.then_branch, guardspan, attrs);
+
+        if let Some((_, expr)) = ifexpr.else_branch.as_mut() {
+            self.add_scope(expr.span());
+            // XXX 2 scopes same span ... we are storing in hashmap
+            // ... the problem is that expr is most likely block
+            if let Some(span) = guardspan {
+                self.set_high_condition(span)
+            }
+            self.process_expr_with_attrs(expr, attrs);
+            self.remove_scope();
+        }
+    }
     pub(crate) fn process_expr_with_attrs(&mut self, expr: &mut Expr, attrs: &Attributes) {
         match expr {
             Expr::Assign(assign) => {
@@ -151,6 +172,7 @@ impl IfcContext {
             Expr::Binary(b) => self.process_binary_sides(&mut b.left, &mut b.right, attrs),
             Expr::Block(b) => self.process_block(&mut b.block, None, attrs),
             Expr::Call(call) => self.process_call(call, attrs),
+            Expr::If(ifexpr) => self.process_if(ifexpr, attrs),
             // we do not do any transoformations to literals.
             Expr::Lit(_) => (),
             Expr::Paren(paren) => self.process_expr_with_attrs(&mut paren.expr, attrs),
@@ -183,7 +205,7 @@ impl IfcContext {
             _ => VariableState::None,
         };
         self.tmp_remove_scope();
-        return ty;
+        ty
     }
     pub(crate) fn get_expr_type(&mut self, expr: &Expr) -> VariableState {
         match expr {
@@ -202,6 +224,14 @@ impl IfcContext {
             Expr::Block(b) => self.get_block_type(&b.block),
             // we don't support functions yet so we treat them as untyped.
             Expr::Call(_) => VariableState::None,
+            // If the condition of the If Expression is high then the return
+            // value must be high (rust doesn't enforce it) If the condition
+            // is low and the if expression is well typed then the type of
+            //the then block should be the same as the type of the else block.
+            Expr::If(ifexpr) => match self.get_expr_type(&ifexpr.cond) {
+                VariableState::High => VariableState::High,
+                _ => self.get_block_type(&ifexpr.then_branch),
+            },
             // Literals are not typed
             // This way we can have them wrapped by High or low immediately
             Expr::Lit(_) => VariableState::None,
@@ -236,7 +266,6 @@ impl IfcContext {
                 Expr::Field(ExprField),
                 Expr::ForLoop(ExprForLoop),
                 Expr::Group(ExprGroup),
-
                 Expr::Index(ExprIndex),
                 Expr::Let(ExprLet),
                 Expr::Loop(ExprLoop),
