@@ -4,7 +4,7 @@ use crate::error::{assign_high2low, high_guard, high_guard_fn, pass_high_to_fn};
 use proc_macro2::Span;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{parse, Block, Expr, ExprCall, ExprIf, ExprWhile, Stmt};
+use syn::{parse, Block, Expr, ExprCall, ExprIf, ExprMatch, ExprWhile, Pat, Stmt};
 
 impl IfcContext {
     /// We don't support IFC in functions yet.
@@ -170,6 +170,43 @@ impl IfcContext {
         };
         self.process_block(&mut wexpr.body, guardspan, attrs);
     }
+    fn process_match(&mut self, mexpr: &mut ExprMatch, attrs: &Attributes) {
+        let span = mexpr.expr.span();
+        self.process_expr_with_attrs(&mut mexpr.expr, attrs);
+        let (guardspan, arm_transform) = match self.get_expr_type(&mexpr.expr) {
+            VariableState::High => {
+                let transform: Box<dyn Fn(&mut Pat) + 'static> = Box::new(|p: &mut Pat| {
+                    let tokens = quote!(ifc::HighVar{data: #p, status: std::marker::PhantomData});
+                    *p = parse::<Pat>(tokens.into()).expect(
+                        "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
+                    );
+                });
+                (Some(span), transform)
+            }
+            VariableState::Low => {
+                let transform: Box<dyn Fn(&mut Pat) + 'static> = Box::new(|p: &mut Pat| {
+                    let tokens = quote!(ifc::LowVar{data: #p, status: std::marker::PhantomData});
+                    *p = parse::<Pat>(tokens.into()).expect(
+                        "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
+                    );
+                });
+                (None, transform)
+            }
+            VariableState::None => {
+                let transform: Box<dyn Fn(&mut Pat) + 'static> = Box::new(|_p: &mut Pat| ());
+                (None, transform)
+            }
+        };
+        for arm in mexpr.arms.iter_mut() {
+            arm_transform(&mut arm.pat);
+            self.add_scope(arm.body.span());
+            if let Some(span) = guardspan {
+                self.set_high_condition(span)
+            }
+            self.process_expr_with_attrs(&mut arm.body, attrs);
+            self.remove_scope();
+        }
+    }
     pub(crate) fn process_expr_with_attrs(&mut self, expr: &mut Expr, attrs: &Attributes) {
         match expr {
             Expr::Assign(assign) => {
@@ -184,6 +221,7 @@ impl IfcContext {
             Expr::If(ifexpr) => self.process_if(ifexpr, attrs),
             // we do not do any transoformations to literals.
             Expr::Lit(_) => (),
+            Expr::Match(mexpr) => self.process_match(mexpr, attrs),
             Expr::Paren(paren) => self.process_expr_with_attrs(&mut paren.expr, attrs),
             // we don't do any transformations on identifiers.
             Expr::Path(_) => (),
@@ -245,6 +283,11 @@ impl IfcContext {
             // Literals are not typed
             // This way we can have them wrapped by High or low immediately
             Expr::Lit(_) => VariableState::None,
+            Expr::Match(mexpr) => match self.get_expr_type(&mexpr.expr) {
+                VariableState::High => VariableState::High,
+                _ => self.get_expr_type(&mexpr.arms[0].body),
+            },
+
             // parens are for (a + b) and if conditions and loops
             // Not to be confused with tuples
             Expr::Paren(paren) => self.get_expr_type(&paren.expr),
@@ -283,7 +326,6 @@ impl IfcContext {
                 Expr::Let(ExprLet),
                 Expr::Loop(ExprLoop),
                 Expr::Macro(ExprMacro),
-                Expr::Match(ExprMatch),
                 Expr::MethodCall(ExprMethodCall),
                 Expr::Range(ExprRange),
                 Expr::Reference(ExprReference),
