@@ -1,6 +1,15 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
+    t.pass("test/match_high_high.rs");
+    t.compile_fail("test/match_high_low.rs");
+    t.compile_fail("test/match_high_none.rs");
+    t.pass("test/match_low_high.rs");
+    t.pass("test/match_low_low.rs");
+    t.pass("test/match_low_none.rs");
+    t.pass("test/match_none_high.rs");
+    t.pass("test/match_none_low.rs");
+    t.pass("test/match_none_none.rs");
     t.pass("test/while_high3.rs");
     t.compile_fail("test/while_high2.rs");
     t.compile_fail("test/while_high1.rs");

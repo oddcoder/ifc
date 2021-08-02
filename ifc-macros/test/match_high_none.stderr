@@ -1,0 +1,16 @@
+error: Cannot declare new low variable or assign to low variable in high context
+ --> $DIR/match_high_none.rs:8:21
+  |
+8 |             true => _x += 1,
+  |                     ^^^^^^^
+  |
+help: High context was created here
+ --> $DIR/match_high_none.rs:7:15
+  |
+7 |         match a {
+  |               ^
+help: Low variable is used here.
+ --> $DIR/match_high_none.rs:8:21
+  |
+8 |             true => _x += 1,
+  |                     ^^
