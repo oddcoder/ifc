@@ -12,8 +12,10 @@ pub struct High;
 
 #[derive(Default)]
 pub struct Variable<S, T> {
-    data: T,
-    status: PhantomData<S>,
+    #[doc(hidden)]
+    pub data: T,
+    #[doc(hidden)]
+    pub status: PhantomData<S>,
 }
 
 impl<S, T> Variable<S, T> {
