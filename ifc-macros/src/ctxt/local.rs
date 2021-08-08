@@ -88,10 +88,14 @@ impl IfcContext {
             //  4- expr is low and ifc_attr is high => we do casting.
             self.process_expr_with_attrs(expr, &ifc_attrs);
             let new_expr_tokens = match (self.get_expr_type(expr), ifc_attrs.state.get()) {
+                // I got lost here for a moment and I thought I caught a bug,
+                // but you really cannot declare new untyped vairable inside ifc block can you.
+                (_, VariableState::None) => unreachable!(),
                 (VariableState::None, VariableState::Low) => quote!(ifc::LowVar::new(#expr)).into(),
                 (VariableState::None, VariableState::High) => {
                     quote!(ifc::HighVar::new(#expr)).into()
                 }
+                (VariableState::Low, VariableState::Low) => quote!(#expr).into(),
                 (VariableState::Low, VariableState::High) => {
                     quote!(ifc::HighVar::from(#expr)).into()
                 }
@@ -101,7 +105,7 @@ impl IfcContext {
                     let ident_span = self.get_lhs_span(local);
                     assign_high2low(local_span, expr_span, ident_span).abort()
                 }
-                _ => quote!(#expr).into(),
+                (VariableState::High, VariableState::High) => quote!(#expr).into(),
             };
             *expr = Box::new(parse::<Expr>(new_expr_tokens).expect(
                 "Fatal Error: Ifc-macros had Quote generated rust code that failed to parse",
