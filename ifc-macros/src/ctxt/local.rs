@@ -57,6 +57,7 @@ impl IfcContext {
             _ => unimplemented!(),
         }
     }
+
     /// A local let binding: let x: u64 = s.parse()?.
     pub fn process_local(&mut self, local: &mut Local) {
         // first look at the attributes and parse the IFC related ones
@@ -100,10 +101,14 @@ impl IfcContext {
                     quote!(ifc::HighVar::from(#expr)).into()
                 }
                 (VariableState::High, VariableState::Low) => {
-                    let expr_span = expr.span();
-                    let local_span = local.span();
-                    let ident_span = self.get_lhs_span(local);
-                    assign_high2low(local_span, expr_span, ident_span).abort()
+                    if *ifc_attrs.declassify.get() {
+                        quote!(#expr.declassify()).into()
+                    } else {
+                        let expr_span = expr.span();
+                        let local_span = local.span();
+                        let ident_span = self.get_lhs_span(local);
+                        assign_high2low(local_span, expr_span, ident_span).abort()
+                    }
                 }
                 (VariableState::High, VariableState::High) => quote!(#expr).into(),
             };

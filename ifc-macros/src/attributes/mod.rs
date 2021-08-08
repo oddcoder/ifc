@@ -112,7 +112,6 @@ impl From<AttributesBuilder> for Attributes {
 pub(crate) struct Attributes {
     pub(crate) state: Property<VariableState>,
     pub(crate) r#unsafe: Property<bool>,
-    #[allow(dead_code)]
     pub(crate) declassify: Property<bool>,
 }
 

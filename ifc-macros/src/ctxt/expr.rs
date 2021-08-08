@@ -66,12 +66,20 @@ impl IfcContext {
             (None, VariableState::None, VariableState::None) => quote!(#right),
             (None, VariableState::None, VariableState::Low) => quote!(#right.inner()),
             (None, VariableState::None, VariableState::High) => {
-                assign_high2low(fullspan, right.span(), left.span()).abort()
+                if *attrs.declassify.get() {
+                    quote!(#right.declassify().inner()).into()
+                } else {
+                    assign_high2low(fullspan, right.span(), left.span()).abort()
+                }
             }
             (None, VariableState::Low, VariableState::None) => quote!(ifc::LowVar::new(#right)),
             (None, VariableState::Low, VariableState::Low) => quote!(#right),
             (None, VariableState::Low, VariableState::High) => {
-                assign_high2low(fullspan, right.span(), left.span()).abort()
+                if *attrs.declassify.get() {
+                    quote!(#right.declassify()).into()
+                } else {
+                    assign_high2low(fullspan, right.span(), left.span()).abort()
+                }
             }
             (_, VariableState::High, VariableState::None) => quote!(ifc::HighVar::new(#right)),
             (_, VariableState::High, VariableState::Low) => {
