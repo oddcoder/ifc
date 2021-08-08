@@ -1,10 +1,20 @@
-use crate::{High, Variable};
+use crate::{High, LowVar, Variable};
 
 pub type HighVar<T> = Variable<High, T>;
+use std::marker::PhantomData;
 
 pub trait UnsafeInner {
     type Output;
     unsafe fn inner(self) -> Self::Output;
+}
+
+impl<T> HighVar<T> {
+    pub fn declassify(self) -> LowVar<T> {
+        LowVar {
+            data: self.data,
+            status: PhantomData,
+        }
+    }
 }
 
 impl<T> UnsafeInner for HighVar<T> {
