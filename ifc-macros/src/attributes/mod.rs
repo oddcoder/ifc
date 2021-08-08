@@ -18,6 +18,8 @@ struct AttributesBuilder {
     state_span: Option<Span>,
     r#unsafe: Option<bool>,
     unsafe_span: Option<Span>,
+    declassify: Option<bool>,
+    declassify_span: Option<Span>,
 }
 
 impl AttributesBuilder {
@@ -54,6 +56,22 @@ impl AttributesBuilder {
             }
         }
     }
+    fn set_declassify(&mut self, span: Span) {
+        match self.declassify.as_ref() {
+            Some(_) => {
+                if self.declassify_span.unwrap().start() > span.start() {
+                    conflicting_attributes(span, self.declassify_span.unwrap()).abort();
+                } else {
+                    conflicting_attributes(self.declassify_span.unwrap(), span).abort();
+                }
+            }
+            None => {
+                self.declassify = Some(true);
+                self.declassify_span = Some(span);
+            }
+        }
+    }
+
     fn consume(&mut self, i: Ident) {
         let ident_str = format!("{}", i);
         match &*ident_str {
@@ -63,6 +81,7 @@ impl AttributesBuilder {
             }
             "Low" => self.set_state(VariableState::Low, i.span()),
             "Unsafe" => self.set_unsafe(i.span()),
+            "Declassify" => self.set_declassify(i.span()),
             _ => unknown_attribute(i.span()).abort(),
         }
     }
@@ -78,13 +97,23 @@ impl From<AttributesBuilder> for Attributes {
             Some(s) => Property::new_with_span(s, b.unsafe_span.unwrap()),
             None => Property::new(false),
         };
-        Attributes { state, r#unsafe }
+        let declassify = match b.declassify {
+            Some(d) => Property::new_with_span(d, b.declassify_span.unwrap()),
+            None => Property::new(false),
+        };
+        Attributes {
+            state,
+            r#unsafe,
+            declassify,
+        }
     }
 }
 
 pub(crate) struct Attributes {
     pub(crate) state: Property<VariableState>,
     pub(crate) r#unsafe: Property<bool>,
+    #[allow(dead_code)]
+    pub(crate) declassify: Property<bool>,
 }
 
 impl Attributes {
