@@ -1,6 +1,12 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
+    t.pass("test/assign_eq_declassify_to_low.rs");
+    t.pass("test/assign_eq_declassify_to_none.rs");
+    t.pass("test/assign_declassify_to_low.rs");
+    t.pass("test/assign_declassify_to_none.rs");
+    t.pass("test/let_declassify_to_low.rs");
+    t.compile_fail("test/useless_declassify.rs");
     t.pass("test/match_high_high.rs");
     t.compile_fail("test/match_high_low.rs");
     t.compile_fail("test/match_high_none.rs");
