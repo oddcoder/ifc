@@ -1,6 +1,9 @@
 #[test]
 fn tests() {
     let t = trybuild::TestCases::new();
+    t.pass("test/macro_unsafe.rs");
+    t.compile_fail("test/macros_fail.rs");
+    t.pass("test/macros_pass.rs");
     t.pass("test/assign_eq_declassify_to_low.rs");
     t.pass("test/assign_eq_declassify_to_none.rs");
     t.pass("test/assign_declassify_to_low.rs");

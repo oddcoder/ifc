@@ -1,10 +1,14 @@
 use super::IfcContext;
 use crate::attributes::{Attributes, VariableState};
-use crate::error::{assign_high2low, high_guard, high_guard_fn, pass_high_to_fn};
+use crate::error::{assign_high2low, high_guard, high_guard_fn, macros_fail, pass_high_to_fn};
+use crate::MacroArgs;
 use proc_macro2::Span;
 use quote::quote;
 use syn::spanned::Spanned;
-use syn::{parse, Block, Expr, ExprCall, ExprIf, ExprMatch, ExprWhile, Pat, Stmt};
+use syn::{
+    parse, punctuated::Punctuated, token::Comma, Block, Expr, ExprCall, ExprIf, ExprMacro,
+    ExprMatch, ExprWhile, Pat, Stmt,
+};
 
 impl IfcContext {
     /// We don't support IFC in functions yet.
@@ -12,9 +16,13 @@ impl IfcContext {
     /// 1- argument is neither High nor low: in this case we don nothing
     /// 2- argument is low so we access the internals
     /// 3- argument is high: we only access internals if unsafe is provided.
-    fn process_call(&mut self, call: &mut ExprCall, attrs: &Attributes) {
-        let callspan = call.span();
-        for argument in call.args.iter_mut() {
+    fn process_args(
+        &mut self,
+        callspan: Span,
+        args: &mut Punctuated<Expr, Comma>,
+        attrs: &Attributes,
+    ) {
+        for argument in args {
             // we discard attributes here
             self.process_expr_with_attrs(argument, attrs);
             match (
@@ -42,6 +50,10 @@ impl IfcContext {
             }
         }
     }
+    fn process_call(&mut self, call: &mut ExprCall, attrs: &Attributes) {
+        let callspan = call.span();
+        self.process_args(callspan, &mut call.args, attrs);
+    }
 
     fn process_assign_sides(
         &mut self,
@@ -67,7 +79,7 @@ impl IfcContext {
             (None, VariableState::None, VariableState::Low) => quote!(#right.inner()),
             (None, VariableState::None, VariableState::High) => {
                 if *attrs.declassify.get() {
-                    quote!(#right.declassify().inner()).into()
+                    quote!(#right.declassify().inner())
                 } else {
                     assign_high2low(fullspan, right.span(), left.span()).abort()
                 }
@@ -76,7 +88,7 @@ impl IfcContext {
             (None, VariableState::Low, VariableState::Low) => quote!(#right),
             (None, VariableState::Low, VariableState::High) => {
                 if *attrs.declassify.get() {
-                    quote!(#right.declassify()).into()
+                    quote!(#right.declassify())
                 } else {
                     assign_high2low(fullspan, right.span(), left.span()).abort()
                 }
@@ -215,6 +227,15 @@ impl IfcContext {
             self.remove_scope();
         }
     }
+    fn process_macro(&mut self, mac: &mut ExprMacro, attrs: &Attributes) {
+        let mut args = match mac.mac.parse_body::<MacroArgs>() {
+            Ok(args) => args,
+            Err(_) => macros_fail(mac.span(), mac.mac.tokens.span()).abort(),
+        };
+        let span = mac.span();
+        self.process_args(span, &mut args.args, attrs);
+        mac.mac.tokens = quote!(#args);
+    }
     pub(crate) fn process_expr_with_attrs(&mut self, expr: &mut Expr, attrs: &Attributes) {
         match expr {
             Expr::Assign(assign) => {
@@ -229,6 +250,7 @@ impl IfcContext {
             Expr::If(ifexpr) => self.process_if(ifexpr, attrs),
             // we do not do any transoformations to literals.
             Expr::Lit(_) => (),
+            Expr::Macro(mac) => self.process_macro(mac, attrs),
             Expr::Match(mexpr) => self.process_match(mexpr, attrs),
             Expr::Paren(paren) => self.process_expr_with_attrs(&mut paren.expr, attrs),
             // we don't do any transformations on identifiers.
@@ -291,6 +313,8 @@ impl IfcContext {
             // Literals are not typed
             // This way we can have them wrapped by High or low immediately
             Expr::Lit(_) => VariableState::None,
+            // Just like with function, we don't support macros so we return them as untyped.
+            Expr::Macro(_) => VariableState::None,
             Expr::Match(mexpr) => match self.get_expr_type(&mexpr.expr) {
                 VariableState::High => VariableState::High,
                 _ => self.get_expr_type(&mexpr.arms[0].body),
@@ -333,7 +357,6 @@ impl IfcContext {
                 Expr::Index(ExprIndex),
                 Expr::Let(ExprLet),
                 Expr::Loop(ExprLoop),
-                Expr::Macro(ExprMacro),
                 Expr::MethodCall(ExprMethodCall),
                 Expr::Range(ExprRange),
                 Expr::Reference(ExprReference),

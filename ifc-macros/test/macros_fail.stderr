@@ -1,0 +1,11 @@
+error: Cannot pass high expression as an argument to functions or macros
+ --> $DIR/macros_fail.rs:6:18
+  |
+6 |         let _y = format!("{}", x);
+  |                  ^^^^^^^^^^^^^^^^
+  |
+help: High Expression
+ --> $DIR/macros_fail.rs:6:32
+  |
+6 |         let _y = format!("{}", x);
+  |                                ^

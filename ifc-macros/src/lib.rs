@@ -6,10 +6,12 @@
 mod attributes;
 mod ctxt;
 mod error;
+mod macro_parser;
 mod scope;
 mod semi_block;
 
 use ctxt::IfcContext;
+use macro_parser::MacroArgs;
 use proc_macro::TokenStream;
 use proc_macro_error::*;
 use quote::quote;

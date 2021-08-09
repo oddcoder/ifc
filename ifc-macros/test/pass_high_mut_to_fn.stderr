@@ -1,4 +1,4 @@
-error: Cannot pass high expression as an argument to functions
+error: Cannot pass high expression as an argument to functions or macros
  --> $DIR/pass_high_mut_to_fn.rs:9:9
   |
 9 |         inc(x);

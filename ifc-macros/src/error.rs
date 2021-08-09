@@ -44,7 +44,7 @@ pub fn pass_high_to_fn(full: Span, high: Span) -> Diagnostic {
     Diagnostic::spanned(
         full,
         Level::Error,
-        "Cannot pass high expression as an argument to functions".to_string(),
+        "Cannot pass high expression as an argument to functions or macros".to_string(),
     )
     .span_help(high, "High Expression".to_string())
 }
@@ -67,4 +67,13 @@ pub fn high_guard_fn(full: Span, high: Span, arg: Span) -> Diagnostic {
     )
     .span_help(high, "High context was created here".to_string())
     .span_help(arg, "Argument is passed here.".to_string())
+}
+
+pub fn macros_fail(mac: Span, args: Span) -> Diagnostic {
+    Diagnostic::spanned(
+        mac,
+        Level::Error,
+        "Cannot call macros that take arguments that are not function-like parameters.".to_string(),
+    )
+    .span_help(args, "Argument(s) is passed here.".to_string())
 }
