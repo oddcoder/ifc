@@ -1,6 +1,6 @@
 # Information Flow Control
 
-This crate implements type system for L~equivalence IFC with delimited release declassifier. Full documentation for the project exists in `docs` folder.
+This crate implements a type system for L~equivalence IFC with a delimited release declassifier. Full documentation for the project exists in the `docs` folder.
 
 
 ## Quick Start
@@ -13,7 +13,7 @@ ifc = {git = "https://github.com/oddcoder/ifc"}
 ifc-macros = {git = "https://github.com/oddcoder/ifc"}
 ```
 
-The project should work with stable rust. However, at the time of writing this readme, Rust nightly is required to get the detailed error messages.
+The project should work with stable rust. However, at the time of writing this readme, Rust nightly is required to get detailed error messages.
 
 
 ## Basic Example
@@ -77,16 +77,16 @@ help: Low variable is used here.
 
 ## Usage
 
-To create context where where ifc rules apply, use the macro `ifc_block` as follows:
+To create a context where IFC rules apply, use the macro `ifc_block` as follows:
 
 
 ```rust
 ifc_block!{
-    // This is code block where ifc rules apply.
+    // This is a code block where IFC rules apply.
 }
 ```
 
-From here one everything we mention goes inside ifc_block macro. By default, all variables are high unless specified otherwise. Low variables require specific marker using rust attributes as follows:
+From here one everything we mention goes inside ifc_block macro. By default, all variables are high unless specified otherwise. Low variables require a specific marker using rust attributes as follows:
 
 ```rust
 let this_is_high_varialble_by_default;
@@ -98,11 +98,11 @@ let another_high_variable;
 
 The following IFC holds:
 
-- You can assign low variable to low variables or high variables.
+- You can assign low variables to low variables or high variables.
 - You can assign high variables only to another high variable.
 - You may assign high variables to low variables if they are attributed with `#[IFC(Declassify)]`.
-- Loops, if statements, match statements with high variable in the condition must only assign to high variables in the body.
-- Function calls return value is always low variable (due to limited functions support).
+- Loops, if statements, match statements with a high variable in the condition must only assign to high variables in the body.
+- Function calls return value is always a low variable (due to limited functions support).
 - Arguments to function calls cannot be high variables unless the function is attributed with `#[IFC(Unsafe)]`.
 
 
