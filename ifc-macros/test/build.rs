@@ -1,5 +1,6 @@
 use lazy_static::lazy_static;
 use std::sync::Mutex;
+use std::thread;
 
 enum State {
     Pass,
@@ -86,8 +87,7 @@ lazy_static! {
     ]);
 }
 
-#[test]
-fn tests() {
+fn worker() {
     let t = trybuild::TestCases::new();
     loop {
         let (state, path) = match TESTS.lock().unwrap().pop() {
@@ -98,5 +98,19 @@ fn tests() {
             State::Pass => t.pass(path),
             State::Fail => t.compile_fail(path),
         }
+    }
+}
+
+#[test]
+fn tests() {
+    let cores = num_cpus::get();
+    let mut threads = Vec::with_capacity(cores);
+    for _ in 0..cores {
+        threads.push(thread::spawn(move || {
+            worker();
+        }));
+    }
+    for thread in threads {
+        thread.join().unwrap();
     }
 }
