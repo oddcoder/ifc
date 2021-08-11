@@ -102,7 +102,7 @@ impl IfcContext {
                 }
                 (VariableState::High, VariableState::Low) => {
                     if *ifc_attrs.declassify.get() {
-                        quote!(#expr.declassify()).into()
+                        quote!((#expr).declassify()).into()
                     } else {
                         let expr_span = expr.span();
                         let local_span = local.span();

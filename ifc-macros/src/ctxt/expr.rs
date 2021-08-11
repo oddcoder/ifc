@@ -76,10 +76,10 @@ impl IfcContext {
                 high_guard(fullspan, guard, left.span()).abort()
             }
             (None, VariableState::None, VariableState::None) => quote!(#right),
-            (None, VariableState::None, VariableState::Low) => quote!(#right.inner()),
+            (None, VariableState::None, VariableState::Low) => quote!((#right).inner()),
             (None, VariableState::None, VariableState::High) => {
                 if *attrs.declassify.get() {
-                    quote!(#right.declassify().inner())
+                    quote!((#right).declassify().inner())
                 } else {
                     assign_high2low(fullspan, right.span(), left.span()).abort()
                 }
@@ -88,7 +88,7 @@ impl IfcContext {
             (None, VariableState::Low, VariableState::Low) => quote!(#right),
             (None, VariableState::Low, VariableState::High) => {
                 if *attrs.declassify.get() {
-                    quote!(#right.declassify())
+                    quote!((#right).declassify())
                 } else {
                     assign_high2low(fullspan, right.span(), left.span()).abort()
                 }
