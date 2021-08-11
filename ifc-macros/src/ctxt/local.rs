@@ -80,6 +80,7 @@ impl IfcContext {
         }
         // finally we set the initializer correctly.
         if let Some((_, expr)) = &mut local.init {
+            let expr_span = expr.span();
             // we have one of the following scenarios:
             //  1- expr is neither high not low, , in this case we can simply type it
             //     according to our ifc_attrs.
@@ -104,7 +105,6 @@ impl IfcContext {
                     if *ifc_attrs.declassify.get() {
                         quote!((#expr).declassify()).into()
                     } else {
-                        let expr_span = expr.span();
                         let local_span = local.span();
                         let ident_span = self.get_lhs_span(local);
                         assign_high2low(local_span, expr_span, ident_span).abort()

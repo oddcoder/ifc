@@ -10,6 +10,7 @@ enum State {
 lazy_static! {
     static ref TESTS: Mutex<Vec<(State, &'static str)>> = Mutex::new(vec![
         (State::Pass, "test/macro_unsafe.rs"),
+        (State::Fail, "test/correct_error_span_let.rs"),
         (State::Pass, "test/macro_unsafe.rs"),
         (State::Pass, "test/macros_pass.rs"),
         (State::Pass, "test/assign_eq_declassify_to_low.rs"),
