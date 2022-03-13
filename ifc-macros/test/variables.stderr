@@ -1,5 +1,5 @@
 warning: All variables are `High` by default
- --> $DIR/variables.rs:6:15
+ --> test/variables.rs:6:15
   |
 6 |         #[IFC(High)]
   |               ^^^^
@@ -7,7 +7,7 @@ warning: All variables are `High` by default
   = help: Try removing `High`
 
 error: Warning_Error
-  --> $DIR/variables.rs:15:5
+  --> test/variables.rs:15:5
    |
 15 |     compile_error!("Warning_Error");
-   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,5 +1,5 @@
 warning: Unused attribute
- --> $DIR/useless_declassify.rs:5:20
+ --> test/useless_declassify.rs:5:20
   |
 5 |         #[IFC(Low, Declassify)]
   |                    ^^^^^^^^^^
@@ -7,7 +7,7 @@ warning: Unused attribute
   = help: Try removing it
 
 warning: Unused attribute
- --> $DIR/useless_declassify.rs:7:20
+ --> test/useless_declassify.rs:7:20
   |
 7 |         #[IFC(Low, Declassify)]
   |                    ^^^^^^^^^^
@@ -15,7 +15,7 @@ warning: Unused attribute
   = help: Try removing it
 
 error:
-  --> $DIR/useless_declassify.rs:10:5
+  --> test/useless_declassify.rs:10:5
    |
 10 |     compile_error!("");
-   |     ^^^^^^^^^^^^^^^^^^^
+   |     ^^^^^^^^^^^^^^^^^^

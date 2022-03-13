@@ -1,0 +1,16 @@
+error: Cannot assign high expression to low variable
+  --> test/correct_error_span_let.rs:10:9
+   |
+10 |         let z : u64 = w * x;
+   |         ^^^^^^^^^^^^^^^^^^^^
+   |
+help: Low Variable
+  --> test/correct_error_span_let.rs:10:13
+   |
+10 |         let z : u64 = w * x;
+   |             ^
+help: High Expression
+  --> test/correct_error_span_let.rs:10:23
+   |
+10 |         let z : u64 = w * x;
+   |                       ^^^^^
